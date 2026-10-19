@@ -1,8 +1,9 @@
-from rest_framework import status
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .permissions import IsInternalService
+from .selectors import visible_internships_for
 from .serializers import InternshipCreateSerializer, InternshipSerializer
 from .services import ActiveInternshipConflict, create_internship
 
@@ -16,7 +17,7 @@ class InternshipCreateView(APIView):
     409 Conflict: the student already has an active internship.
     """
 
-    # Service-to-service calls use the token, not user sessions or JWTs.
+    # Service-to-service calls use the shared token, not user JWTs.
     authentication_classes = []
     permission_classes = [IsInternalService]
 
@@ -31,3 +32,19 @@ class InternshipCreateView(APIView):
 
         response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
         return Response(InternshipSerializer(internship).data, status=response_status)
+
+
+class InternshipListView(generics.ListAPIView):
+    serializer_class = InternshipSerializer
+
+    def get_queryset(self):
+        return visible_internships_for(self.request.user)
+
+
+class InternshipDetailView(generics.RetrieveAPIView):
+    serializer_class = InternshipSerializer
+
+    def get_queryset(self):
+        # Filtering before the lookup means an internship the caller cannot see
+        # returns 404, exactly like a missing one. This avoids leaking which IDs exist.
+        return visible_internships_for(self.request.user)

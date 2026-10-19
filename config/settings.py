@@ -8,11 +8,10 @@ env = environ.Env()
 environ.Env.read_env(str(BASE_DIR / ".env"))
 
 # Secrets and environment-specific values come from the environment.
-# SECRET_KEY has no default on purpose: the app refuses to start without it.
+# Required values have no default on purpose: the app refuses to start without them.
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
-INTERNAL_SERVICE_TOKEN = env("INTERNAL_SERVICE_TOKEN", default="")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -80,8 +79,23 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Secure default: every endpoint requires an authenticated caller unless it
-# explicitly opts out. Authentication classes are added in a later step.
+# Shared secret for service-to-service calls (X-Service-Token header).
+# Empty by default, so if it is not configured, nothing passes.
+INTERNAL_SERVICE_TOKEN = env("INTERNAL_SERVICE_TOKEN", default="")
+
+# JWT issued by the Identity & Profiles service. The signing key must match theirs.
+# The algorithm is fixed in code on purpose, not read from the environment, so it
+# cannot be weakened by configuration.
+JWT_SIGNING_KEY = env("JWT_SIGNING_KEY")
+JWT_ALGORITHM = "HS256"
+
 REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "internships.authentication.IdentityJWTAuthentication",
+    ],
+    # Secure default: every endpoint requires an authenticated caller unless it
+    # explicitly opts out.
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }

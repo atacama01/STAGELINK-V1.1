@@ -1,0 +1,8 @@
+class Role:
+    STUDENT = "STUDENT"
+    COMPANY = "COMPANY"
+    UNIVERSITY = "UNIVERSITY"
+    ADMIN = "ADMIN"
+
+
+ALL_ROLES = frozenset({Role.STUDENT, Role.COMPANY, Role.UNIVERSITY, Role.ADMIN})
