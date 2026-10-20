@@ -58,22 +58,23 @@ class IdentityJWTAuthentication(BaseAuthentication):
                 token,
                 settings.JWT_SIGNING_KEY,
                 algorithms=[settings.JWT_ALGORITHM],
-                options={"require": ["exp", "sub", "role"]},
+                options={"require": ["exp", "user_id", "role"]},
             )
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed("Token has expired.")
         except jwt.InvalidTokenError:
             raise AuthenticationFailed("Invalid token.")
 
+        # Role values are matched exactly. "STUDENT" and "Student" are different.
         role = payload["role"]
         if role not in ALL_ROLES:
             raise AuthenticationFailed("Unknown role.")
 
         try:
-            user_id = int(payload["sub"])
+            user_id = int(payload["user_id"])
         except (TypeError, ValueError):
-            raise AuthenticationFailed("Invalid subject.")
+            raise AuthenticationFailed("Invalid user id.")
         if user_id < 1:
-            raise AuthenticationFailed("Invalid subject.")
+            raise AuthenticationFailed("Invalid user id.")
 
         return Actor(user_id=user_id, role=role)

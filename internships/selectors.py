@@ -13,9 +13,13 @@ def visible_internships_for(actor):
     if actor.role == Role.COMPANY:
         return Internship.objects.filter(company_user_id=actor.user_id)
 
-    if actor.role == Role.UNIVERSITY:
+    if actor.role == Role.SUPERVISOR:
+        # Supervisors see only internships explicitly assigned to them.
+        return Internship.objects.filter(supervisor_user_id=actor.user_id)
+
+    if actor.role == Role.UNIVERSITY_ADMINISTRATION:
         return Internship.objects.all()
 
-    # ADMIN (platform administration) has no access to internship data in this version.
-    # Default-deny: any role not listed above sees nothing.
+    # Platform Administrator, and any role not listed above, sees nothing.
+    # Default-deny.
     return Internship.objects.none()
